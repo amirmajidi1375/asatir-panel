@@ -60,7 +60,7 @@
 </div>
 <div class="progress"><div id="bar"></div></div>
 <div class="progress-label" id="barLabel"></div>
-<div class="notice" id="outsideNotice">ℹ️ داری این صفحه رو بیرون از تلگرام می‌بینی. برای این‌که رأیت ثبت بشه، پنل رو از داخل تلگرام باز کن: چت خصوصی بات ← دکمهٔ منوی «پنل رأی‌گیری».</div>
+<div class="notice" id="outsideNotice">ℹ️ به‌نظر میاد این صفحه بیرون از تلگرام باز شده. برای ثبت رأی، پنل رو فقط از داخل تلگرام باز کن: چت خصوصی بات ← «پنل» ← دکمهٔ «📋 باز کردن پنل رأی‌گیری» بالای کیبورد.</div>
 <div class="badlaunch" id="badLaunch">⛔ <b>از مسیر اشتباه وارد شدی!</b> از این مسیر تلگرام رأی رو به بات برنمی‌گردونه و <b>هیچ ثبتی انجام نمی‌شه</b>.<br>مسیر درست: این صفحه رو ببند ← چت خصوصی بات (<b>@Muse_Asatir_Bot</b>) ← کلمهٔ «<b>پنل</b>» رو بفرست ← دکمهٔ «📋 باز کردن پنل رأی‌گیری» بالای کیبورد رو بزن.</div>
 <div class="howto">✅ <b>معیار ثبت‌شدن رأی:</b> پیام «رأیت ثبت شد ✅» که بات <b>همون لحظه</b> توی چت خصوصی برات می‌فرسته. رأی فقط وقتی ثبت شده که این پیام رو ببینی.<br>💬 زیر هر سؤال، پنل جمع‌شوندهٔ «نظرات و نظر Muse» هست؛ رأی و نظر همدیگه اونجا دیده می‌شه (با هر به‌روزرسانی پنل تازه می‌شه).</div>
 
@@ -114,7 +114,7 @@ const launchedViaQuery = !!(tg && tg.initDataUnsafe && tg.initDataUnsafe.query_i
 if (launchedViaQuery) document.getElementById('badLaunch').style.display = 'block';
 const myId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
 const myRole = myId === AMIR_ID ? "amir" : "negin";
-if (!tg || !tg.initData) document.getElementById('outsideNotice').style.display = 'block';
+if (!tg || (tg.platform === 'unknown' && !tg.initData)) document.getElementById('outsideNotice').style.display = 'block';
 
 const state = {}; // qid -> {sel, free, changeMode}
 function faNum(n){ return String(n).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]); }
@@ -201,7 +201,7 @@ function submitQ(qid){
     alert('⛔ از این مسیر ثبت ممکن نیست! صفحه رو ببند و از چت خصوصی بات، با دکمهٔ کیبورد «📋 باز کردن پنل رأی‌گیری» وارد شو (توضیح بالای صفحه).');
     return;
   }
-  if (tg && tg.sendData && tg.initData) {
+  if (tg && typeof tg.sendData === 'function') {
     tg.sendData(JSON.stringify(payload));
     document.getElementById('ok-' + qid).style.display = 'block';
   } else {
