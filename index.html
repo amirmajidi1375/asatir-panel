@@ -84,9 +84,9 @@
 <div id="lightbox" onclick="this.style.display='none'"><img id="lightImg"></div>
 
 <script>
-const TASK = 1;
+let TASK = 1;
 const AMIR_ID = 94731359;
-const QUESTIONS = [
+let QUESTIONS = [
   {id:"q1", short:"قانون حضور (لنگر + مهمان)",
    text:"قانون حضور: فقط سروش (لنگر) تقریباً همیشه هست؛ بقیه فقط وقتی قصه به آن‌ها نیاز دارد می‌آیند و هرکدام صحنه و جایگاه خودشان را دارند؛ کیومرث و موجودات قصه‌های بزرگ «مهمان»اند، نه عضو ثابت.",
    options:["قبول","اصلاح دارم"], textOptions:["اصلاح دارم"]},
@@ -103,14 +103,14 @@ const QUESTIONS = [
    text:"دو مهمان تازه از تحقیق منابع: «بوشاسپ» (دیوِ تنبلی و خواب‌آلودگیِ سحرگاه، از بندهشن) مهمان تکرارشونده شود + «اکومن» (دیوِ نشخوار فکری) همزادِ بهمن شود؟",
    options:["هر دو بیایند","فقط بوشاسپ","فقط اکومن","هیچ‌کدام","بعداً تصمیم بگیریم"], textOptions:[]}
 ];
-const SNAPSHOT = {
+let SNAPSHOT = {
   q1:{amir:"قبول (ثبت‌شده در پنل)", negin:"اصلاح دارم: من هنوز نمیدونم که میخوام یه راوی کاراکتر اصلیم باشه مثلا نویسنده منابع یا مثلا فردوسی یا یه انسان کنجکاو و مشتاق امروزی چون کاراکتر اصلی باید همیشه باشه این کاراکتر هایی ک تا الان در موردشون حرف زدیم یجا داستانشون شروع میشه و یجا داستانشون تموم میشه یا مثلا چندتا اپیزود دیگه کاری باهاشون نداریم"},
   q2:{amir:"بدون تغییر (ثبت‌شده در پنل)", negin:"پیشنهاد دارم: خب من الان نمیدونم اصلا این شش نفر بر چه اساسی انتخاب شدن ؟ کاراکترها و شخصیت ها بسیار زیادن الان این شش نفر چطوری طراحی شدن چه طور قراره بیان توی خط داستان معرفی بشن قراره بمونن با داستانشون تموم میشه؟ بقیه کاراکترها چی؟"},
   q3:{amir:"بله، می‌ماند (ثبت‌شده در پنل)", negin:"اصلاح دارم: من فکر میکنم نشون دادن کاراکتر های انسانی و غیرانسانی باید متفاوت باشه اما لوس و کلیشه ای نباشه مثلا ما شخصیت های انسانی، الهی، حیوانات، اهریمن، دیو ها و .. داریم پس طراحی اینا باید طوری باشه که مخاطب تشخیص بده این و صرفا از روی رنگ و هاله و بال و اینا نباشه"},
   q4:{amir:"الهام‌گرفته از ایزدان", negin:"الهام‌گرفته از ایزدان"},
   q5:{amir:"هر دو بیایند", negin:"هر دو بیایند"}
 };
-const PANEL_NOTES = {
+let PANEL_NOTES = {
   q1:{comments:[], claude:"قانون «لنگر + مهمان» هم با مدل لوسیفرِ پیشنهادی نگین جور است، هم با رأی C امیر. ریسکش فقط کم‌رنگ‌شدن بقیهٔ کاراکترهاست که با صحنه و جایگاه ثابتِ هرکدام جبران می‌شود."},
   q2:{comments:[], claude:"گروه شش‌نفره فعلاً کامل است؛ اضافه‌کردن عضو تازه قبل از قفل سبک (تسک ۳) هزینهٔ طراحی و شلوغی قاب را بالا می‌برد."},
   q3:{comments:[], claude:"نسبت ۵٫۵:۱ امضای بصری گروه است و کیومرثِ گرد، استثنای لازم برای قصه‌های بزرگ را می‌سازد."},
@@ -264,6 +264,47 @@ function sendAll(){
 csGet(CS_OWN, v => { try { ownSent = JSON.parse(v || '{}') || {}; } catch(e){ ownSent = {}; } render(); });
 csGet(CS_DRAFT, v => { try { staged = JSON.parse(v || '{}') || {}; } catch(e){ staged = {}; } render(); });
 render();
+</script>
+
+<script>
+/* LIVE DATA (v8): refresh from data.json on every open; baked values are only a fallback. */
+(function(){
+  function applyData(d){
+    try {
+      if (!d) return;
+      var before = JSON.stringify([TASK, QUESTIONS, SNAPSHOT, PANEL_NOTES]);
+      if (d.task) TASK = d.task;
+      if (d.questions && d.questions.length) QUESTIONS = d.questions;
+      if (d.snapshot) SNAPSHOT = d.snapshot;
+      if (d.notes) PANEL_NOTES = d.notes;
+      if (d.title) { var h = document.querySelector('h1'); if (h) h.textContent = d.title; document.title = d.title; }
+      if (d.subtitle !== undefined) { var hh = document.querySelector('h1'); var p = (hh && hh.parentElement) ? hh.parentElement.querySelector('p') : null; if (p) p.textContent = d.subtitle; }
+      if (d.images) {
+        var box = document.querySelector('.imgs');
+        if (box) {
+          if (d.imagesTitle) { var sec = box.parentElement; var h2 = sec ? sec.querySelector('h2') : null; if (h2) h2.textContent = d.imagesTitle; }
+          box.innerHTML = '';
+          d.images.forEach(function(im){
+            var f = document.createElement('figure');
+            var i = document.createElement('img');
+            i.src = im.src; i.setAttribute('onclick', 'zoom(this)');
+            f.appendChild(i);
+            if (im.caption) { var c = document.createElement('figcaption'); c.textContent = im.caption; f.appendChild(c); }
+            box.appendChild(f);
+          });
+        }
+      }
+      var after = JSON.stringify([TASK, QUESTIONS, SNAPSHOT, PANEL_NOTES]);
+      if (after !== before) render();
+    } catch(e) {}
+  }
+  if (typeof fetch === 'function') {
+    fetch('data.json?t=' + Date.now(), {cache: 'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(applyData)
+      .catch(function(){});
+  }
+})();
 </script>
 </body>
 </html>
