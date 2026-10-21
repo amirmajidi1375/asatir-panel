@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:#f3efe6; color:#23202a; padding:16px 14px 40px; }
+  body { margin:0; font-family:'Vazirmatn',Tahoma,sans-serif; background:#f3efe6; color:#23202a; padding:16px 14px 110px; }
   .head { text-align:center; margin:6px 0 14px; }
   .head h1 { font-size:20px; font-weight:900; margin:0 0 4px; }
   .head p { margin:0; color:#6d675a; font-size:13px; }
@@ -49,6 +49,11 @@
   details.cmtpanel .claude-note { background:#eef3fb; border:1px solid #cfddf2; border-radius:10px; padding:8px 10px; font-size:13px; line-height:1.9; margin-top:8px; }
   .howto { background:#eef7ee; border:1px solid #cfe6cf; color:#2e5b2e; border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.9; margin-bottom:14px; }
   .badlaunch { background:#fdecec; border:1.5px solid #e5a3a3; color:#8c2b2b; border-radius:12px; padding:12px; font-size:13.5px; line-height:2; margin-bottom:14px; display:none; }
+  .staged-note { background:#fdf6e0; border:1.5px solid #e8c95a; border-radius:12px; padding:10px; font-size:13.5px; line-height:1.9; }
+  #sendbar { position:fixed; bottom:0; left:0; right:0; background:#23202a; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; align-items:center; z-index:40; box-shadow:0 -2px 10px rgba(0,0,0,.25); }
+  #sendbar button { flex:1; background:#c9a227; color:#fff; border:none; border-radius:12px; padding:13px; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; }
+  #sendbar button[disabled] { background:#5a5344; color:#bdb49a; cursor:default; }
+  #sendbar span { color:#f5d76e; font-size:13px; white-space:nowrap; }
   #lightbox { display:none; position:fixed; inset:0; background:rgba(20,16,8,.92); z-index:50; align-items:center; justify-content:center; }
   #lightbox img { max-width:94vw; max-height:92vh; border-radius:10px; }
 </style>
@@ -62,7 +67,7 @@
 <div class="progress-label" id="barLabel"></div>
 <div class="notice" id="outsideNotice">ℹ️ به‌نظر میاد این صفحه بیرون از تلگرام باز شده. برای ثبت رأی، پنل رو فقط از داخل تلگرام باز کن: چت خصوصی بات ← «پنل» ← دکمهٔ «📋 باز کردن پنل رأی‌گیری» بالای کیبورد.</div>
 <div class="badlaunch" id="badLaunch">⛔ <b>از مسیر اشتباه وارد شدی!</b> از این مسیر تلگرام رأی رو به بات برنمی‌گردونه و <b>هیچ ثبتی انجام نمی‌شه</b>.<br>مسیر درست: این صفحه رو ببند ← چت خصوصی بات (<b>@Muse_Asatir_Bot</b>) ← کلمهٔ «<b>پنل</b>» رو بفرست ← دکمهٔ «📋 باز کردن پنل رأی‌گیری» بالای کیبورد رو بزن.</div>
-<div class="howto">✅ <b>معیار ثبت‌شدن رأی:</b> پیام «رأیت ثبت شد ✅» که بات <b>همون لحظه</b> توی چت خصوصی برات می‌فرسته. رأی فقط وقتی ثبت شده که این پیام رو ببینی.<br>💬 زیر هر سؤال، پنل جمع‌شوندهٔ «نظرات و نظر Muse» هست؛ رأی و نظر همدیگه اونجا دیده می‌شه (با هر به‌روزرسانی پنل تازه می‌شه).</div>
+<div class="howto">🗳️ <b>روش کار:</b> جواب هر سؤال رو انتخاب کن و «✔️ افزودن به فهرست ارسال» رو بزن؛ در آخر، یک‌بار دکمهٔ «📤 ارسال همه» پایین صفحه رو بزن — همهٔ جواب‌ها یک‌جا می‌رن و اپ فقط همون یک بار بسته می‌شه.<br>✅ <b>معیار ثبت‌شدن:</b> پیام تأییدی که بات توی چت خصوصی می‌فرسته. بعد از هر ارسال، وضعیت کامل رأی‌ها و نظرها توی گروه هم گذاشته می‌شه.<br>💬 زیر هر سؤال، پنل جمع‌شوندهٔ «نظرات و نظر Muse» هست.</div>
 
 <div class="card">
   <h2>📷 عکس‌های نمونه — گروه در سه پوست</h2>
@@ -75,6 +80,7 @@
 </div>
 
 <div id="questions"></div>
+<div id="sendbar"><span id="sendCount">۰ آماده</span><button id="sendAllBtn" onclick="sendAll()" disabled>📤 ارسال همه</button></div>
 <div id="lightbox" onclick="this.style.display='none'"><img id="lightImg"></div>
 
 <script>
@@ -99,13 +105,13 @@ const QUESTIONS = [
 ];
 const SNAPSHOT = {
   q1:{amir:"قبول (ثبت‌شده در پنل)"}, q2:{amir:"بدون تغییر (ثبت‌شده در پنل)"},
-  q3:{amir:"بله، می‌ماند (ثبت‌شده در پنل)"}, q4:{}, q5:{}
+  q3:{amir:"بله، می‌ماند (ثبت‌شده در پنل)"}, q4:{amir:"الهام‌گرفته از ایزدان"}, q5:{}
 };
 const PANEL_NOTES = {
   q1:{comments:[], claude:"قانون «لنگر + مهمان» هم با مدل لوسیفرِ پیشنهادی نگین جور است، هم با رأی C امیر. ریسکش فقط کم‌رنگ‌شدن بقیهٔ کاراکترهاست که با صحنه و جایگاه ثابتِ هرکدام جبران می‌شود."},
   q2:{comments:[], claude:"گروه شش‌نفره فعلاً کامل است؛ اضافه‌کردن عضو تازه قبل از قفل سبک (تسک ۳) هزینهٔ طراحی و شلوغی قاب را بالا می‌برد."},
   q3:{comments:[], claude:"نسبت ۵٫۵:۱ امضای بصری گروه است و کیومرثِ گرد، استثنای لازم برای قصه‌های بزرگ را می‌سازد."},
-  q4:{comments:[], claude:"پیشنهادم «الهام‌گرفته» است: طبق قانون منبع (تسک ۱۰) کپشن هیچ‌وقت ادعای اسطوره‌ایِ نادرست نمی‌سازد و دست قصه‌سازی باز می‌ماند."},
+  q4:{comments:[{name:"امیر", text:"به نظرم باید صرفاً الهام گرفته شده باشه نه این که دقیقاً همونا باشن. ما اصلا قراره اینا رو توی دنیای امروزی و مسائل کلی آدم‌های این دوره نشون بدیم. و این که اسم ها هم به نظرم باید یه فکری کنیم. الان مثلاً سروش و کیومرث و... برای خارجی ها (چون بی‌کلام هست و امکان داره ببینن) قابل فهم و تلفظ نیست."}], claude:"پیشنهادم «الهام‌گرفته» است: طبق قانون منبع (تسک ۱۰) کپشن هیچ‌وقت ادعای اسطوره‌ایِ نادرست نمی‌سازد و دست قصه‌سازی باز می‌ماند."},
   q5:{comments:[], claude:"هر دو شخصیت از منابع واقعی‌اند (بوشاسپ در بندهشن و وندیداد، دیوِ تنبلیِ سحرگاه؛ اکومن همزادِ نشخوار فکریِ بهمن). بوشاسپ برای وینیت‌های روزمره طلایی است و اکومن، کشمکش بهمن را دیدنی می‌کند."}
 };
 const tg = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
@@ -117,10 +123,19 @@ const myRole = myId === AMIR_ID ? "amir" : "negin";
 if (!tg || (tg.platform === 'unknown' && !tg.initData)) document.getElementById('outsideNotice').style.display = 'block';
 
 const state = {}; // qid -> {sel, free, changeMode}
+let staged = {};  // qid -> {choice|text, comment, change} ready to send
+let ownSent = {}; // qid -> value string (own submitted answers, device cache)
+const CS_DRAFT = 'drafts_t' + TASK, CS_OWN = 'own_t' + TASK;
 function faNum(n){ return String(n).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]); }
 function zoom(el){ document.getElementById('lightImg').src = el.src; document.getElementById('lightbox').style.display='flex'; }
+function csGet(key, cb){ try { localStorage.getItem(key); } catch(e){} 
+  if (tg && tg.CloudStorage) { tg.CloudStorage.getItem(key, (err, val) => { if (!err && val) cb(val); else { try { cb(localStorage.getItem(key)); } catch(e){ cb(null); } } }); }
+  else { try { cb(localStorage.getItem(key)); } catch(e){ cb(null); } } }
+function csSet(key, val){ try { if (tg && tg.CloudStorage) tg.CloudStorage.setItem(key, val, ()=>{}); } catch(e){} try { localStorage.setItem(key, val); } catch(e){} }
+function persistDrafts(){ csSet(CS_DRAFT, JSON.stringify(staged)); }
+function entryValue(e){ return e.text || e.choice || ''; }
 
-function myVote(qid){ return (SNAPSHOT[qid] && SNAPSHOT[qid][myRole]) || null; }
+function myVote(qid){ return (SNAPSHOT[qid] && SNAPSHOT[qid][myRole]) || ownSent[qid] || null; }
 
 function render(){
   const wrap = document.getElementById('questions');
@@ -128,17 +143,24 @@ function render(){
   let doneCount = 0;
   QUESTIONS.forEach((q, i) => {
     const votes = SNAPSHOT[q.id] || {};
-    if (votes.amir && votes.negin) doneCount++;
+    if ((votes.amir || (myRole==='amir' && ownSent[q.id])) && (votes.negin || (myRole==='negin' && ownSent[q.id]))) doneCount++;
     const card = document.createElement('div'); card.className = 'card';
     const mine = myVote(q.id);
     const st = state[q.id] || (state[q.id] = {sel:null, free:false, changeMode:false});
     let html = `<h2><span class="qnum">سؤال ${faNum(i+1)}</span>${q.short}</h2>`;
     html += `<p style="font-size:13.5px;line-height:2;color:#3c382e;margin:0 0 4px">${q.text}</p>`;
+    const dispA = votes.amir || (myRole==='amir' ? ownSent[q.id] : null);
+    const dispN = votes.negin || (myRole==='negin' ? ownSent[q.id] : null);
     html += `<div class="slots">
-      <div class="slot ${votes.amir?'done':'wait'}"><b>امیر</b>${votes.amir ? '✅ ' + votes.amir : '⏳ هنوز رأی نداده'}</div>
-      <div class="slot ${votes.negin?'done':'wait'}"><b>نگین</b>${votes.negin ? '✅ ' + votes.negin : '⏳ هنوز رأی نداده'}</div>
+      <div class="slot ${dispA?'done':'wait'}"><b>امیر</b>${dispA ? '✅ ' + dispA : '⏳ هنوز رأی نداده'}</div>
+      <div class="slot ${dispN?'done':'wait'}"><b>نگین</b>${dispN ? '✅ ' + dispN : '⏳ هنوز رأی نداده'}</div>
     </div>`;
-    if (mine && !st.changeMode) {
+    if (staged[q.id]) {
+      const sv = entryValue(staged[q.id]);
+      html += `<div class="staged-note">📝 <b>آمادهٔ ارسال:</b> «${sv}»${staged[q.id].comment ? '<br>💬 ' + staged[q.id].comment : ''}</div>
+               <button class="alt" onclick="unstage('${q.id}')">✏️ ویرایش</button>
+               <button class="alt" onclick="removeStaged('${q.id}')">🗑 حذف از فهرست</button>`;
+    } else if (mine && !st.changeMode) {
       html += `<div class="locked-note">رأی تو ثبت و قفل شده ✅<br>«${mine}»</div>
                <button class="alt" onclick="unlock('${q.id}')">✏️ تغییر رأیم</button>`;
     } else {
@@ -152,9 +174,8 @@ function render(){
                  <textarea id="free-${q.id}" placeholder="متن رأی…">${st.freeText||''}</textarea>`;
       }
       html += `<span class="lbl">💬 نظر جدا (اختیاری — مستقل از رأی):</span>
-               <textarea id="cmt-${q.id}" placeholder="اگه نظری داری…"></textarea>
-               <button class="submit" onclick="submitQ('${q.id}')">ثبت</button>
-               <div class="ok" id="ok-${q.id}">ارسال شد ⏳<br>تأیید نهایی وقتیه که بات توی <b>چت خصوصی</b> پیام «رأیت ثبت شد ✅» بفرسته.<br>اگه تا یک دقیقه نیومد، رأیت نرسیده — دوباره تلاش کن.</div>`;
+               <textarea id="cmt-${q.id}" placeholder="اگه نظری داری…">${st.cmtText||''}</textarea>
+               <button class="submit" onclick="stageQ('${q.id}')">✔️ افزودن به فهرست ارسال</button>`;
       if (mine && st.changeMode) html += `<p style="font-size:12px;color:#8a8168;margin:8px 0 0">در حالت تغییر رأی هستی؛ رأی تازه رو انتخاب و ثبت کن.</p>`;
     }
     const pn = PANEL_NOTES[q.id] || {comments:[], claude:""};
@@ -173,6 +194,9 @@ function render(){
   const pct = Math.round(doneCount / QUESTIONS.length * 100);
   document.getElementById('bar').style.width = pct + '%';
   document.getElementById('barLabel').textContent = `${faNum(doneCount)} از ${faNum(QUESTIONS.length)} سؤال کامل شده`;
+  const nStaged = Object.keys(staged).length;
+  document.getElementById('sendCount').textContent = faNum(nStaged) + ' آمادهٔ ارسال';
+  document.getElementById('sendAllBtn').disabled = nStaged === 0;
 }
 function pick(qid, opt){ const st = state[qid]; st.sel = opt; if (!QUESTIONS.find(q=>q.id===qid).textOptions.includes(opt)) st.free = false; saveTexts(); render(); restoreTexts(); }
 function toggleFree(qid){ const st = state[qid]; st.free = !st.free; if (st.free) st.sel = null; saveTexts(); render(); restoreTexts(); }
@@ -180,34 +204,61 @@ function unlock(qid){ state[qid].changeMode = true; render(); }
 let textCache = {};
 function saveTexts(){ document.querySelectorAll('textarea').forEach(t => textCache[t.id] = t.value); }
 function restoreTexts(){ document.querySelectorAll('textarea').forEach(t => { if (textCache[t.id] !== undefined) t.value = textCache[t.id]; }); }
-function submitQ(qid){
+function stageQ(qid){
   const q = QUESTIONS.find(x => x.id === qid);
   const st = state[qid];
   const freeEl = document.getElementById('free-' + qid);
   const freeText = freeEl ? freeEl.value.trim() : '';
   const cmtEl = document.getElementById('cmt-' + qid);
   const comment = cmtEl ? cmtEl.value.trim() : '';
-  let payload = {task: TASK, q: qid, change: !!st.changeMode, comment: comment};
+  let entry = {change: !!st.changeMode, comment: comment};
   if (st.free) {
     if (!freeText) { alert('اول متنت رو بنویس.'); return; }
-    payload.text = freeText;
+    entry.text = freeText;
   } else if (st.sel) {
     if (q.textOptions.includes(st.sel)) {
       if (!freeText) { alert('برای این گزینه، توضیحت رو بنویس.'); return; }
-      payload.text = st.sel + ': ' + freeText;
-    } else payload.choice = st.sel;
+      entry.text = st.sel + ': ' + freeText;
+    } else entry.choice = st.sel;
   } else { alert('اول یه گزینه رو انتخاب کن یا «خودم می‌نویسم» رو بزن.'); return; }
+  staged[qid] = entry;
+  persistDrafts();
+  render();
+}
+function unstage(qid){
+  const e = staged[qid]; if (!e) return;
+  const st = state[qid] || (state[qid] = {sel:null, free:false, changeMode:false});
+  st.free = true; st.sel = null; st.freeText = e.text || e.choice || ''; st.cmtText = e.comment || '';
+  st.changeMode = !!e.change;
+  delete staged[qid]; persistDrafts(); render();
+}
+function removeStaged(qid){ delete staged[qid]; persistDrafts(); render(); }
+function sendAll(){
   if (launchedViaQuery) {
     alert('⛔ از این مسیر ثبت ممکن نیست! صفحه رو ببند و از چت خصوصی بات، با دکمهٔ کیبورد «📋 باز کردن پنل رأی‌گیری» وارد شو (توضیح بالای صفحه).');
     return;
   }
-  if (tg && typeof tg.sendData === 'function') {
-    tg.sendData(JSON.stringify(payload));
-    document.getElementById('ok-' + qid).style.display = 'block';
-  } else {
-    alert('ثبت رأی فقط داخل تلگرام کار می‌کند: چت خصوصی بات ← «پنل» ← دکمهٔ کیبورد.');
+  if (!(tg && typeof tg.sendData === 'function')) {
+    alert('ارسال فقط داخل تلگرام کار می‌کند: چت خصوصی بات ← «پنل» ← دکمهٔ کیبورد.');
+    return;
   }
+  const ids = Object.keys(staged);
+  if (!ids.length) return;
+  let batch = {}, kept = [];
+  for (const id of ids) {
+    const trial = Object.assign({}, batch); trial[id] = staged[id];
+    const size = new TextEncoder().encode(JSON.stringify({task: TASK, bulk: trial})).length;
+    if (size > 3800 && Object.keys(batch).length) { kept.push(id); continue; }
+    batch = trial;
+  }
+  if (kept.length) alert('حجم متن‌ها زیاده؛ این بار ' + faNum(Object.keys(batch).length) + ' سؤال ارسال می‌شه و ' + faNum(kept.length) + ' سؤال آماده می‌مونه — بعد از باز کردن دوبارهٔ پنل، «ارسال همه» رو دوباره بزن.');
+  for (const id of Object.keys(batch)) { ownSent[id] = entryValue(batch[id]); delete staged[id]; }
+  csSet(CS_OWN, JSON.stringify(ownSent));
+  persistDrafts();
+  tg.sendData(JSON.stringify({task: TASK, bulk: batch}));
 }
+csGet(CS_OWN, v => { try { ownSent = JSON.parse(v || '{}') || {}; } catch(e){ ownSent = {}; } render(); });
+csGet(CS_DRAFT, v => { try { staged = JSON.parse(v || '{}') || {}; } catch(e){ staged = {}; } render(); });
 render();
 </script>
 </body>
