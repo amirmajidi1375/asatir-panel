@@ -40,7 +40,14 @@
   .alt { width:100%; margin-top:8px; background:none; border:1.5px dashed #cbbf97; color:#7a6f4d; border-radius:12px; padding:9px; font-family:inherit; font-size:13px; cursor:pointer; }
   .locked-note { background:#eef7ee; border:1px solid #cfe6cf; border-radius:12px; padding:10px; font-size:13px; line-height:1.9; }
   .notice { background:#fdf3e0; border:1px solid #ecd9a8; color:#7a5b12; border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.9; margin-bottom:14px; display:none; }
-  .ok { display:none; text-align:center; color:#2e7d32; font-weight:700; padding:10px 0 2px; font-size:14px; }
+  .ok { display:none; text-align:center; color:#2e7d32; font-weight:700; padding:10px 0 2px; font-size:14px; line-height:1.9; }
+  .ok b { color:#1b5e20; }
+  details.cmtpanel { background:#faf6ec; border:1px dashed #ddd2ae; border-radius:12px; padding:8px 12px; margin-top:12px; }
+  details.cmtpanel summary { cursor:pointer; font-size:13px; font-weight:700; color:#7a6f4d; padding:2px 0; }
+  details.cmtpanel .cmt { font-size:13px; line-height:1.9; border-top:1px solid #eee3c2; padding:7px 0 2px; }
+  details.cmtpanel .cmt b { color:#55503f; }
+  details.cmtpanel .claude-note { background:#eef3fb; border:1px solid #cfddf2; border-radius:10px; padding:8px 10px; font-size:13px; line-height:1.9; margin-top:8px; }
+  .howto { background:#eef7ee; border:1px solid #cfe6cf; color:#2e5b2e; border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.9; margin-bottom:14px; }
   #lightbox { display:none; position:fixed; inset:0; background:rgba(20,16,8,.92); z-index:50; align-items:center; justify-content:center; }
   #lightbox img { max-width:94vw; max-height:92vh; border-radius:10px; }
 </style>
@@ -53,6 +60,7 @@
 <div class="progress"><div id="bar"></div></div>
 <div class="progress-label" id="barLabel"></div>
 <div class="notice" id="outsideNotice">ℹ️ داری این صفحه رو بیرون از تلگرام می‌بینی. برای این‌که رأیت ثبت بشه، پنل رو از داخل تلگرام باز کن: چت خصوصی بات ← دکمهٔ منوی «پنل رأی‌گیری».</div>
+<div class="howto">✅ <b>معیار ثبت‌شدن رأی:</b> پیام «رأیت ثبت شد ✅» که بات توی <b>چت خصوصی</b> برات می‌فرسته. پیام داخل این صفحه به‌تنهایی کافی نیست؛ اگه تا یک دقیقه پیام بات نیومد، یعنی رأیت نرسیده — صفحه رو از منوی چت خصوصی بات دوباره باز کن و ثبت کن.<br>💬 زیر هر سؤال، پنل جمع‌شوندهٔ «نظرات و نظر Muse» هست؛ رأی و نظر همدیگه اونجا دیده می‌شه (با هر به‌روزرسانی پنل تازه می‌شه).</div>
 
 <div class="card">
   <h2>📷 عکس‌های نمونه — گروه در سه پوست</h2>
@@ -90,6 +98,13 @@ const QUESTIONS = [
 const SNAPSHOT = {
   q1:{amir:"قبول (ثبت‌شده در پنل)"}, q2:{amir:"بدون تغییر (ثبت‌شده در پنل)"},
   q3:{amir:"بله، می‌ماند (ثبت‌شده در پنل)"}, q4:{}, q5:{}
+};
+const PANEL_NOTES = {
+  q1:{comments:[], claude:"قانون «لنگر + مهمان» هم با مدل لوسیفرِ پیشنهادی نگین جور است، هم با رأی C امیر. ریسکش فقط کم‌رنگ‌شدن بقیهٔ کاراکترهاست که با صحنه و جایگاه ثابتِ هرکدام جبران می‌شود."},
+  q2:{comments:[], claude:"گروه شش‌نفره فعلاً کامل است؛ اضافه‌کردن عضو تازه قبل از قفل سبک (تسک ۳) هزینهٔ طراحی و شلوغی قاب را بالا می‌برد."},
+  q3:{comments:[], claude:"نسبت ۵٫۵:۱ امضای بصری گروه است و کیومرثِ گرد، استثنای لازم برای قصه‌های بزرگ را می‌سازد."},
+  q4:{comments:[], claude:"پیشنهادم «الهام‌گرفته» است: طبق قانون منبع (تسک ۱۰) کپشن هیچ‌وقت ادعای اسطوره‌ایِ نادرست نمی‌سازد و دست قصه‌سازی باز می‌ماند."},
+  q5:{comments:[], claude:"هر دو شخصیت از منابع واقعی‌اند (بوشاسپ در بندهشن و وندیداد، دیوِ تنبلیِ سحرگاه؛ اکومن همزادِ نشخوار فکریِ بهمن). بوشاسپ برای وینیت‌های روزمره طلایی است و اکومن، کشمکش بهمن را دیدنی می‌کند."}
 };
 const tg = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); }
@@ -135,9 +150,19 @@ function render(){
       html += `<span class="lbl">💬 نظر جدا (اختیاری — مستقل از رأی):</span>
                <textarea id="cmt-${q.id}" placeholder="اگه نظری داری…"></textarea>
                <button class="submit" onclick="submitQ('${q.id}')">ثبت</button>
-               <div class="ok" id="ok-${q.id}">ثبت شد ✅ — بات توی گروه به‌روزش می‌کنه.</div>`;
+               <div class="ok" id="ok-${q.id}">ارسال شد ⏳<br>تأیید نهایی وقتیه که بات توی <b>چت خصوصی</b> پیام «رأیت ثبت شد ✅» بفرسته.<br>اگه تا یک دقیقه نیومد، رأیت نرسیده — دوباره تلاش کن.</div>`;
       if (mine && st.changeMode) html += `<p style="font-size:12px;color:#8a8168;margin:8px 0 0">در حالت تغییر رأی هستی؛ رأی تازه رو انتخاب و ثبت کن.</p>`;
     }
+    const pn = PANEL_NOTES[q.id] || {comments:[], claude:""};
+    let cmtHtml = `<details class="cmtpanel"><summary>💬 نظرات و نظر Muse</summary>`;
+    if (pn.comments && pn.comments.length) {
+      cmtHtml += pn.comments.map(c => `<div class="cmt"><b>${c.name}:</b> ${c.text}</div>`).join('');
+    } else {
+      cmtHtml += `<div class="cmt" style="color:#8a8168">هنوز نظری برای این سؤال ثبت نشده.</div>`;
+    }
+    if (pn.claude) cmtHtml += `<div class="claude-note">🤖 <b>نظر Muse:</b> ${pn.claude}</div>`;
+    cmtHtml += `</details>`;
+    html += cmtHtml;
     card.innerHTML = html;
     wrap.appendChild(card);
   });
