@@ -130,6 +130,7 @@
 <script>
 /* CAST SELECTION (v9) — full catalogue, staged picks, one bulk sendData {kind:"cast_picks"} */
 const CAST_CATS = { main:["⭐ پیشنهادم: اصلی","main"], great:["🔷 مهمان بزرگ","great"], guest:["🔸 مهمان","guest"], none:["⚪ کاراکتر نیست","none"], fork:["❓ دوراهی","fork"] };
+let CAST_IMG = {};  // name -> data-uri, filled from data.json castImages
 const CAST_ERAS = { bastan:"لایهٔ باستان", asatiri:"اساطیری", pahlavani:"پهلوانی" };
 // [نام, لاتین, دوره, دستهٔ پیشنهادی, حضور, نمره از ۱۰, شخصیت, شمایل در متن‌ها, قصه‌اش]
 const CAST = [
@@ -246,6 +247,7 @@ function castRender(){
     const reg = castRegLine(name);
     d.innerHTML =
       '<h3>' + name + (en ? ' <small>' + en + '</small>' : '') + '<span class="cscore">' + faNum(score) + ' از ۱۰</span></h3>' +
+      (CAST_IMG[name] ? '<img src="' + CAST_IMG[name] + '" style="width:100%;border-radius:12px;margin:8px 0;display:block" onclick="zoom(this)">' : '') +
       '<div class="ctags"><span class="ctag ' + cc + '">' + cl + '</span><span class="ctag">' + CAST_ERAS[era] + '</span><span class="ctag">حضور: ' + pres + '</span></div>' +
       '<p class="crow"><b>شخصیت:</b> ' + pers + '</p>' +
       '<p class="crow"><b>شمایل:</b> ' + look + '</p>' +
@@ -280,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function(){
   csGet(CAST_KEY, v => { try { castPicks = JSON.parse(v || '{}') || {}; } catch(e){ castPicks = {}; } castRender(); });
   if (typeof fetch === 'function') {
     fetch('data.json?t=' + Date.now(), {cache: 'no-store'}).then(r => r.ok ? r.json() : null).then(d => {
-      if (d && d.castPicks) { castReg = d.castPicks; castRender(); }
+      if (d) { if (d.castPicks) castReg = d.castPicks; if (d.castImages) CAST_IMG = d.castImages; castRender(); }
     }).catch(function(){});
   }
   castRender();
